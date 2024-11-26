@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2.extensions import connection as Connection
-from server.config.config import Config
+from config.config import Config
 
 def get_db_connection() -> Connection:
     """

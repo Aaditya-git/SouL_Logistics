@@ -1,1 +1,6 @@
-pydantic 
+pydantic
+psycopg2
+fastapi[all]
+osmnx
+networkx
+uvicorn

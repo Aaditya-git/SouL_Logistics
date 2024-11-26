@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from server.controller.order_controller import app as logistics_app
+from controller.order_controller import app as logistics_app
 import uvicorn
-from server.db.database import create_tables
+from db.database import create_tables
 
 # Create tables in the database
 create_tables()

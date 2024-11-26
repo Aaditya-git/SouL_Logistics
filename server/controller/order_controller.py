@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
-from server.db.database import get_db_connection
-from server.utils.util import route, calculate_estimated_delivery_time
+from db.database import get_db_connection
+from utils.util import route
 from typing import Dict
  
 app = FastAPI()
