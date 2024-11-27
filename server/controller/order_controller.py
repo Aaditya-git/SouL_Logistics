@@ -16,7 +16,7 @@ def add_order(order_data: Dict):
     try:
         # Calculate the actual route using osmnx
         path, status = route(origin, destination)
-        delivery_times = calculate_estimated_delivery_time(path)
+        # delivery_times = route(path)
 
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
@@ -31,13 +31,12 @@ def add_order(order_data: Dict):
                 )
                 order_id = cursor.fetchone()[0]
 
-                # Insert tracking data into the tracking table
                 cursor.execute(
                     """
                     INSERT INTO tracking (order_id, current_node, current_status, estimated_delivery, path)
                     VALUES (%s, %s, %s, %s, %s);
                     """,
-                    (order_id, path[0], 'New', delivery_times[path[-1]], path)
+                    (order_id, path[0], 'New', 'TBD', path)  # Default value 'TBD' for delivery time
                 )
 
                 conn.commit()
