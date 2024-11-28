@@ -1,9 +1,9 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional
 
 class Inventory(BaseModel):
-    product_id: str
-    warehouse_id: str
-    quantity: int
-    region: str
-    warehouse_location: Optional[str] = Field(None, description="Latitude,Longitude format")
+    item_id: str  # Unique identifier for the item
+    warehouse_id: str  # Warehouse where the item is stored
+    quantity: int  # Number of items available
+    restock_threshold: Optional[int] = 10  # Minimum stock level before restocking
+    status: Optional[str] = "Available"  # Status of the item (e.g., "Available", "Out of Stock")

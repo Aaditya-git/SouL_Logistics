@@ -1,21 +1,40 @@
 from fastapi import APIRouter, HTTPException
-from app.db.database import inventory_collection
 from app.db.models.inventory import Inventory
 
 router = APIRouter()
 
-@router.get("/")
-def get_all_inventory():
-    return list(inventory_collection.find({}, {"_id": 0}))
+# Create a new inventory item
+@router.post("/inventory")
+async def create_inventory_item(item: Inventory):
+    try:
+        # Logic to save the item to the database
+        return {"message": "Inventory item created successfully", "item": item}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/")
-def add_inventory(item: Inventory):
-    inventory_collection.insert_one(item.dict())
-    return {"message": "Inventory item added successfully!"}
+# Get an inventory item by ID
+@router.get("/inventory/{item_id}")
+async def get_inventory_item(item_id: str):
+    try:
+        # Logic to fetch item from the database
+        return {"item_id": item_id, "details": "Item details fetched"}
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
-@router.get("/{product_id}")
-def get_inventory_by_product(product_id: str):
-    result = inventory_collection.find_one({"product_id": product_id}, {"_id": 0})
-    if not result:
-        raise HTTPException(status_code=404, detail="Product not found in inventory")
-    return result
+# Update an inventory item
+@router.put("/inventory/{item_id}")
+async def update_inventory_item(item_id: str, item: Inventory):
+    try:
+        # Logic to update item in the database
+        return {"message": "Inventory item updated successfully", "item": item}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+# Delete an inventory item
+@router.delete("/inventory/{item_id}")
+async def delete_inventory_item(item_id: str):
+    try:
+        # Logic to delete the item from the database
+        return {"message": "Inventory item deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
