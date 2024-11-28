@@ -1,40 +1,130 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, status
 from app.db.models.shipments import Shipment
+from app.db.database import (
+    insert_shipment,
+    query_by_shipment_id,
+    update_shipment,
+    delete_shipment,
+)
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# Create a new shipment
-@router.post("/shipments")
+@router.post('/shipments', status_code=status.HTTP_201_CREATED)
 async def create_shipment(shipment: Shipment):
+    """
+    Create a new shipment.
+    """
     try:
-        # Logic to save the shipment to the database
-        return {"message": "Shipment created successfully", "shipment": shipment}
+        shipment_data = shipment.dict()
+        response = await insert_shipment(shipment_data)
+        if not response:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create shipment. Please try again."
+            )
+        return {
+            "message": "Shipment created successfully",
+            "shipment": shipment
+        }
+    except ValueError as ve:
+        logger.error(f"Validation Error: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(ve)
+        )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error creating shipment: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred."
+        )
 
-# Get shipment by ID
-@router.get("/shipments/{shipment_id}")
+@router.get('/shipments/{shipment_id}', status_code=status.HTTP_200_OK)
 async def get_shipment(shipment_id: str):
+    """
+    Fetch details of a specific shipment.
+    """
     try:
-        # Logic to fetch shipment from the database
-        return {"shipment_id": shipment_id, "details": "Shipment details fetched"}
+        shipment_data = await query_by_shipment_id(shipment_id)
+        if not shipment_data:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Shipment not found."
+            )
+        return {
+            "shipment_id": shipment_data["shipment_id"],
+            "status": shipment_data["status"],
+            "details": "Shipment details fetched successfully",
+        }
+    except ValueError as ve:
+        logger.error(f"Invalid Shipment ID: {shipment_id} - {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid shipment ID."
+        )
     except Exception as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        logger.error(f"Error fetching shipment {shipment_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred."
+        )
 
-# Update shipment status
-@router.put("/shipments/{shipment_id}")
+@router.put("/shipments/{shipment_id}", status_code=status.HTTP_200_OK)
 async def update_shipment(shipment_id: str, shipment: Shipment):
+    """
+    Update an existing shipment.
+    """
     try:
-        # Logic to update shipment in the database
-        return {"message": "Shipment updated successfully", "shipment": shipment}
+        shipment_data = shipment.dict()
+        response = await update_shipment(shipment_id, shipment_data)
+        if not response:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Shipment not found or update failed."
+            )
+        return {
+            "message": "Shipment updated successfully",
+            "shipment": shipment
+        }
+    except ValueError as ve:
+        logger.error(f"Validation Error: {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(ve)
+        )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error updating shipment {shipment_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred."
+        )
 
-# Delete a shipment
-@router.delete("/shipments/{shipment_id}")
+@router.delete("/shipments/{shipment_id}", status_code=status.HTTP_200_OK)
 async def delete_shipment(shipment_id: str):
+    """
+    Delete a shipment by ID.
+    """
     try:
-        # Logic to delete the shipment from the database
+        response = await delete_shipment(shipment_id)
+        if not response:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Shipment not found or already deleted."
+            )
         return {"message": "Shipment deleted successfully"}
+    except ValueError as ve:
+        logger.error(f"Invalid Shipment ID: {shipment_id} - {ve}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid shipment ID."
+        )
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        logger.error(f"Error deleting shipment {shipment_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred."
+        )

@@ -1,8 +1,14 @@
 from pymongo import MongoClient
+from dotenv import load_dotenv
+import os
 
-MONGO_URI = "mongodb://localhost:27017"
-DATABASE_NAME = "logistics_db"
+load_dotenv()
 
 def get_database():
-    client = MongoClient(MONGO_URI)
-    return client[DATABASE_NAME]
+    try:
+        client = MongoClient(os.getenv('MONGO_URI'))
+        print("Connected to MongoDB Atlas successfully.")
+        return client[os.getenv('MONGO_DATABASE')]
+    except Exception as e:
+        print(f"Connection failed: {e}")
+        return None
