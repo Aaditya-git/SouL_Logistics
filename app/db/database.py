@@ -211,6 +211,8 @@ async def query_by_product_id(product_id):
     if db is None:
         raise ValueError("Database connection is not available.")
     result = await asyncio.to_thread(products_collection.find_one, {'product_id': product_id})
+    if result:
+        result["_id"] = str(result["_id"])  # Convert ObjectId to string
     return result
 
 # -------- Orders Functions --------
