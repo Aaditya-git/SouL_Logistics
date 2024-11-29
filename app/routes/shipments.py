@@ -15,33 +15,28 @@ router = APIRouter()
 
 @router.post('/shipments', status_code=status.HTTP_201_CREATED)
 async def create_shipment(shipment: Shipment):
-    """
-    Create a new shipment.
-    """
     try:
         shipment_data = shipment.dict()
-        response = await insert_shipment(shipment_data)
-        if not response:
+
+        # Insert the shipment into the database
+        result = await insert_shipment(shipment_data)
+
+        # Check if the insertion was successful (using result.inserted_id)
+        if not result.inserted_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create shipment. Please try again."
+                detail="Failed to create shipment."
             )
-        return {
-            "message": "Shipment created successfully",
-            "shipment": shipment
-        }
-    except ValueError as ve:
-        logger.error(f"Validation Error: {ve}")
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(ve)
-        )
+
+        return {"message": "Shipment created successfully", "shipment_id": str(result.inserted_id)}
+    
     except Exception as e:
         logger.error(f"Error creating shipment: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred."
         )
+
 
 @router.get('/shipments/{shipment_id}', status_code=status.HTTP_200_OK)
 async def get_shipment(shipment_id: str):
