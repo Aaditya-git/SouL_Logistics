@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, status
-from app.db.models.orders import Order
+from app.db.models.warehouse import Warehouse
 from app.db.database import (
-    insert_order,
-    query_order,
-    update_order,
-    delete_order,
+    insert_warehouse,
+    query_warehouse,
+    update_warehouse,
+    delete_warehouse,
 )
 import logging
 
@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.post('/orders', status_code=status.HTTP_201_CREATED)
-async def create_order(order: Order):
+@router.post('/warehouse', status_code=status.HTTP_201_CREATED)
+async def create_warehouse(warehouse: Warehouse):
     try:
         state_region_mappings = {
             'AL': 'us-east-1', 'AK': 'us-east-2', 'AZ': 'us-west-1', 'AR': 'us-west-2', 'CA': 'us-central',
@@ -28,70 +28,71 @@ async def create_order(order: Order):
             'SD': 'us-east-1', 'TN': 'us-east-2', 'TX': 'us-west-1', 'UT': 'us-west-2', 'VT': 'us-central',
             'VA': 'us-east-1', 'WA': 'us-east-2', 'WV': 'us-west-1', 'WI': 'us-west-2', 'WY': 'us-central'
         }
-        order_data = order.model_dump()
-        if order_data["state"]:
-            order_data["region"] = state_region_mappings.get(order_data["state"], 'Unknown Region')
-        response = await insert_order(order_data)
+        warehouse_data = warehouse.model_dump()
+        if warehouse_data["state"]:
+            warehouse_data["region"] = state_region_mappings.get(warehouse_data["state"], 'Unknown Region')
+        response = await insert_warehouse(warehouse_data)
         if not response:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create order."
+                detail="Failed to create warehouse."
             )
-        return {"message": "Order created successfully", "order": order}
+        warehouse_data["_id"] = response
+        return {"message": "Warehouse created successfully", "warehouse": warehouse_data}
     except Exception as e:
-        logger.error(f"Error creating order: {e}")
+        logger.error(f"Error creating warehouse: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred."
         )
 
-@router.get('/orders/{order_id}', status_code=status.HTTP_200_OK)
-async def get_order(order_id: str):
+@router.get('/warehouse/{warehouse_id}', status_code=status.HTTP_200_OK)
+async def get_warehouse(warehouse_id: str):
     try:
-        order_data = await query_order(order_id)
-        if not order_data:
+        warehouse_data = await query_warehouse(warehouse_id)
+        if not warehouse_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Order not found."
+                detail="Warehouse not found."
             )
-        return order_data
+        return warehouse_data
     except Exception as e:
-        logger.error(f"Error fetching order {order_id}: {e}")
+        logger.error(f"Error fetching warehouse {warehouse_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred."
         )
 
-@router.put('/orders/{order_id}', status_code=status.HTTP_200_OK)
-async def edit_order(order_id: str, order: Order):
+@router.put('/warehouse/{warehouse_id}', status_code=status.HTTP_200_OK)
+async def edit_warehouse(warehouse_id: str, warehouse: Warehouse):
     try:
-        order_data = order.model_dump()
-        response = await update_order(order_id, order_data)
+        warehouse_data = warehouse.model_dump()
+        response = await update_warehouse(warehouse_id, warehouse_data)
         if not response:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Order not found or update failed."
+                detail="Warehouse not found or update failed."
             )
-        return {"message": "Order updated successfully", "order": order}
+        return {"message": "Warehouse updated successfully", "warehouse": warehouse_data}
     except Exception as e:
-        logger.error(f"Error updating order {order_id}: {e}")
+        logger.error(f"Error updating warehouse {warehouse_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred."
         )
 
-@router.delete('/orders/{order_id}', status_code=status.HTTP_200_OK)
-async def remove_order(order_id: str):
+@router.delete('/warehouse/{warehouse_id}', status_code=status.HTTP_200_OK)
+async def remove_warehouse(warehouse_id: str):
     try:
-        response = await delete_order(order_id)
+        response = await delete_warehouse(warehouse_id)
         if not response:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="Order not found or already deleted."
+                detail="Warehouse not found or already deleted."
             )
-        return {"message": "Order deleted successfully"}
+        return {"message": "Warehouse deleted successfully"}
     except Exception as e:
-        logger.error(f"Error deleting order {order_id}: {e}")
+        logger.error(f"Error deleting warehouse {warehouse_id}: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred."

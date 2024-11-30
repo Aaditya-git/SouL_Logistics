@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status
-from app.db.models.shipments import Shipment
+from app.db.models.shipments import ShipmentTracking
 from app.db.database import (
     insert_shipment,
-    query_by_shipment_id,
+    query_shipment,
     update_shipment,
     delete_shipment,
 )
@@ -14,14 +14,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 @router.post('/shipments', status_code=status.HTTP_201_CREATED)
-async def create_shipment(shipment: Shipment):
+async def create_shipment(shipment: ShipmentTracking):
     try:
-        shipment_data = shipment.dict()
-
-        # Insert the shipment into the database
+        shipment_data = shipment.model_dump()
         result = await insert_shipment(shipment_data)
-
-        # Check if the insertion was successful (using result.inserted_id)
         if not result.inserted_id:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -40,11 +36,8 @@ async def create_shipment(shipment: Shipment):
 
 @router.get('/shipments/{shipment_id}', status_code=status.HTTP_200_OK)
 async def get_shipment(shipment_id: str):
-    """
-    Fetch details of a specific shipment.
-    """
     try:
-        shipment_data = await query_by_shipment_id(shipment_id)
+        shipment_data = await query_shipment(shipment_id)
         if not shipment_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -69,12 +62,9 @@ async def get_shipment(shipment_id: str):
         )
 
 @router.put("/shipments/{shipment_id}", status_code=status.HTTP_200_OK)
-async def update_shipment(shipment_id: str, shipment: Shipment):
-    """
-    Update an existing shipment.
-    """
+async def update_shipment(shipment_id: str, shipment: ShipmentTracking):
     try:
-        shipment_data = shipment.dict()
+        shipment_data = shipment.model_dump()
         response = await update_shipment(shipment_id, shipment_data)
         if not response:
             raise HTTPException(
@@ -100,9 +90,6 @@ async def update_shipment(shipment_id: str, shipment: Shipment):
 
 @router.delete("/shipments/{shipment_id}", status_code=status.HTTP_200_OK)
 async def delete_shipment(shipment_id: str):
-    """
-    Delete a shipment by ID.
-    """
     try:
         response = await delete_shipment(shipment_id)
         if not response:
