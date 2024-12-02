@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 class Inventory(BaseModel):
-    inventory_id: str = Field(..., description="Unique identifier for the inventory record")
     warehouse_id: str = Field(..., description="ID of the warehouse storing the inventory")
     product_id: str = Field(..., description="ID of the product in inventory")
     quantity: int = Field(..., ge=0, description="Current quantity of the product in inventory")

@@ -3,14 +3,14 @@ from typing import Optional
 import re
 
 class User(BaseModel):
-    user_id: str = Field(..., description="Unique identifier for the user")
     name: str = Field(..., min_length=2, max_length=100, description="Full name of the user")
     email: EmailStr = Field(..., description="Email address of the user")
+    password: str = Field(..., min_length=2, max_length=20, description="Password of the user")
     phone: str = Field(..., description="Phone number")
-    address: Optional[str] = Field(None, max_length=200, description="Address line 1")
-    city: Optional[str] = Field(None, max_length=100, description="City")
-    state: Optional[str] = Field(None, max_length=50, description="State")
-    zip_code: Optional[str] = Field(None, description="Postal/ZIP code")
+    address: str = Field(None, max_length=200, description="Address line 1")
+    city: str = Field(None, max_length=100, description="City")
+    state: str = Field(None, max_length=50, description="State")
+    zip_code: str = Field(None, description="Postal/ZIP code")
     region: Optional[str] = Field(None, description="Geographic region for the user")
 
     @field_validator('phone')

@@ -4,7 +4,6 @@ from datetime import datetime
 import re
 
 class Order(BaseModel):
-    order_id: str = Field(..., description="Unique identifier for the order")
     user_id: str = Field(..., description="ID of the user placing the order")
     product_id: str = Field(..., description="ID of the product being ordered")
     quantity: int = Field(..., gt=0, description="Number of items ordered")

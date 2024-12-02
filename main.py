@@ -1,14 +1,12 @@
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from app.db.models.orders import Order
 from app.routes import users, products, warehouse, inventory, orders, shipments
-from app.db.database import (
-    insert_order,
-    query_warehouse_by_region,
-    query_inventory_by_warehouse_id,
-    update_inventory
-)
-
+from app.db.database import *
+from pydantic import BaseModel
+from datetime import datetime
 import logging
+from bson import ObjectId
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -22,12 +20,64 @@ app.include_router(inventory.router, prefix="/api", tags=["Inventory"])
 app.include_router(orders.router, prefix="/api", tags=["Orders"])
 app.include_router(shipments.router, prefix="/api", tags=["Shipments"])
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+SHARED_DATA = {
+    'id': '',
+    'region': ''
+}
+
 @app.get("/")
 async def root():
+    global SHARED_DATA
+    SHARED_DATA['id'] = ''
     return {"message": "Welcome to the Logistics and Supply Chain Management API"}
 
+
+@app.post("/login")
+async def login(request: LoginRequest):
+    global SHARED_DATA
+    SHARED_DATA['id'], SHARED_DATA['region'] = await query_user_by_email(request.email)
+    if SHARED_DATA['id'] and SHARED_DATA['region']:
+        return {'id': SHARED_DATA['id']}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+
+@app.get("/orders")
+async def get_orders():
+    global SHARED_DATA
+    orders = await query_all_orders(SHARED_DATA['id'])
+    for order in orders:
+        product = await query_product(order['product_id'])
+        order['product_id'] = product['name']
+        dt_object = datetime.fromisoformat(order['created_at'])
+        order['created_at'] = dt_object.strftime("%B %d, %Y")
+    return orders
+
+
+@app.get("/products")
+async def get_products():
+    global SHARED_DATA
+    products = await query_all_products()
+    warehouses = await query_warehouse_by_region(SHARED_DATA['region'])
+    for warehouse in warehouses:
+        for product in products:
+            inventory = await query_inventory_by_warehouse_id(warehouse["_id"], product["_id"])
+    return products
+
 @app.post('/order', status_code=status.HTTP_201_CREATED)
-async def palce_order(order: Order):
+async def place_order(order: Order):
     try:
         state_region_mappings = {
             'AL': 'us-east-1', 'AK': 'us-east-2', 'AZ': 'us-west-1', 'AR': 'us-west-2', 'CA': 'us-central',
@@ -61,6 +111,7 @@ async def palce_order(order: Order):
                         return {"message": "Order created successfully", "order": response}
         if order["status"] == "Pending":
             return {"message": "Order cannot be fulfilled", "order": order_data}
+        return {"message": "Order Created Successfully", "order": response}
     except Exception as e:
         logger.error(f"Error creating order: {e}")
         raise HTTPException(

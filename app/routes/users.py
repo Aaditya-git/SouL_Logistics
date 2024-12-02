@@ -3,6 +3,7 @@ from app.db.models.users import User
 from app.db.database import (
     insert_user,
     query_user,
+    query_user_by_email,
     update_user,
     delete_user,
 )
@@ -38,7 +39,7 @@ async def create_user(user: User):
                 detail="Failed to create user."
             )
         user_data["_id"] = response
-        return {"message": "User created successfully", "user": user_data}
+        return {"message": f"User created successfully with id {response}"}
     except Exception as e:
         logger.error(f"Error creating user: {e}")
         raise HTTPException(
@@ -46,7 +47,7 @@ async def create_user(user: User):
             detail="An unexpected error occurred."
         )
 
-@router.get('/users/{user_id}', status_code=status.HTTP_200_OK)
+@router.get('/users/id/{user_id}', status_code=status.HTTP_200_OK)
 async def get_user(user_id: str):
     try:
         user_data = await query_user(user_id)
@@ -62,6 +63,25 @@ async def get_user(user_id: str):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred."
         )
+
+
+@router.get('/users/email/{email}', status_code=status.HTTP_200_OK)
+async def get_user_by_email(email: str):
+    try:
+        user_id = await query_user_by_email(email)
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found."
+            )
+        return {"_id": user_id}
+    except Exception as e:
+        logger.error(f"Error fetching user {email}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred."
+        )
+
 
 @router.put('/users/{user_id}', status_code=status.HTTP_200_OK)
 async def edit_user(user_id: str, user: User):

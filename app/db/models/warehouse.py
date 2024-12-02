@@ -15,7 +15,6 @@ VALID_STATES = [
 ]
 
 class Warehouse(BaseModel):
-    warehouse_id: str = Field(..., description="Unique identifier for the warehouse")
     name: str = Field(..., min_length=2, max_length=100, description="Name of the warehouse")
     region: Optional[str] = Field(None, description="Geographic region of the warehouse")
     state: str = Field(..., description="State where the warehouse is located")

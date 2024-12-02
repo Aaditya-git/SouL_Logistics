@@ -62,11 +62,6 @@ class ShipmentItem(BaseModel):
     )
 
 class ShipmentTracking(BaseModel):
-    shipment_id: str = Field(..., 
-        description="Unique shipment identifier", 
-        pattern=r'^SHIP\d{6}$',
-        examples=["SHIP123456"]
-    )
     order_id: str = Field(..., 
         description="Associated order identifier", 
         pattern=r'^ORD\d{6}$',

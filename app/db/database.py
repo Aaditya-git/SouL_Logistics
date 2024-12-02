@@ -2,6 +2,7 @@ import asyncio
 from app.config import get_database
 from dotenv import load_dotenv
 import os
+from bson import ObjectId
 
 load_dotenv()
 db = get_database()
@@ -28,9 +29,26 @@ async def insert_user(user_data):
 async def query_user(user_id):
     if db is None:
         raise ValueError("Database connection is not available.")
-    result = await asyncio.to_thread(users_collection.find_one, {'user_id': user_id})
+    try:
+        object_id = ObjectId(user_id)
+    except:
+        raise ValueError("Invalid ObjectId format")
+    
+    result = await asyncio.to_thread(users_collection.find_one, {'_id': object_id})
+    
+    if result:
+        result["_id"] = str(result["_id"])
+        return result
+    else:
+        return None
+
+
+async def query_user_by_email(email):
+    if db is None:
+        raise ValueError("Database connection is not available.")
+    result = await asyncio.to_thread(users_collection.find_one, {'email': email})
     result["_id"] = str(result["_id"])
-    return result
+    return result["_id"], result["region"]
 
 
 async def update_user(user_id, user_data):
@@ -58,10 +76,30 @@ async def insert_product(product_data):
 async def query_product(product_id):
     if db is None:
         raise ValueError("Database connection is not available.")
-    result = await asyncio.to_thread(products_collection.find_one, {'product_id': product_id})
+    try:
+        object_id = ObjectId(product_id)
+    except:
+        raise ValueError("Invalid ObjectId format")
+    
+    result = await asyncio.to_thread(products_collection.find_one, {'_id': object_id})
+    
     if result:
         result["_id"] = str(result["_id"])
-    return result
+        return result
+    else:
+        return None
+
+
+async def query_all_products():
+    if db is None:
+        raise ValueError('Database connection is not available.')
+    
+    products_list = products_collection.find({})
+    products = []
+    for product in products_list:
+        product["_id"] = str(product["_id"])
+        products.append(product)
+    return products
 
 
 async def update_product(product_id, product_data):
@@ -89,10 +127,18 @@ async def insert_warehouse(warehouse_data):
 async def query_warehouse(warehouse_id):
     if db is None:
         raise ValueError("Database connection is not available.")
-    result = await asyncio.to_thread(warehouses_collection.find_one, {'warehouse_id': warehouse_id})
+    try:
+        object_id = ObjectId(warehouse_id)
+    except:
+        raise ValueError("Invalid ObjectId format")
+    
+    result = await asyncio.to_thread(warehouses_collection.find_one, {'_id': object_id})
+    
     if result:
         result["_id"] = str(result["_id"])
-    return result
+        return result
+    else:
+        return None
 
 
 async def update_warehouse(warehouse_id, warehouse_data):
@@ -167,6 +213,17 @@ async def query_order(order_id):
     if result:
         result["_id"] = str(result["_id"])
     return result
+
+
+async def query_all_orders(user_id):
+    if db is None:
+        raise ValueError('Database connection is not available.')
+    orders_list = await asyncio.to_thread(orders_collection.find, {'user_id': user_id})
+    orders = []
+    for order in orders_list:
+        order["_id"] = str(order["_id"])
+        orders.append(order)
+    return orders
 
 
 async def update_order(order_id, order_data):

@@ -9,11 +9,6 @@ PRODUCT_CATEGORIES = [
 ]
 
 class Product(BaseModel):
-    product_id: str = Field(..., 
-        description="Unique identifier for the product",
-        pattern=r'^PROD\d{5}$',
-        examples=["PROD12345"]
-    )
     name: str = Field(..., 
         min_length=2, 
         max_length=100, 
