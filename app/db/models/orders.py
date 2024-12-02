@@ -6,7 +6,6 @@ import re
 class Order(BaseModel):
     user_id: str = Field(..., description="ID of the user placing the order")
     product_id: str = Field(..., description="ID of the product being ordered")
-    quantity: int = Field(..., gt=0, description="Number of items ordered")
     status: str = Field(default="Pending", description="Status of the order")
     address: str = Field(None, max_length=200, description="Shipping address line 1")
     city: str = Field(None, max_length=100, description="Shipping city")

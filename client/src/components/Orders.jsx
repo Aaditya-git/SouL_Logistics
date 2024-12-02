@@ -24,9 +24,8 @@ export default function Orders() {
             <DataTable value={orders} removableSort tableStyle={{ minWidth: '50rem' }}>
                 <Column field="_id" header="Tracking ID" sortable style={{ width: '25%' }}></Column>
                 <Column field="product_id" header="Product" sortable style={{ width: '25%' }}></Column>
-                <Column field="status" header="Status" sortable style={{ width: '15%' }}></Column>
-                <Column field="quantity" header="Quantity" sortable style={{ width: '15%' }}></Column>
-                <Column field="created_at" header="Order Placed" sortable style={{ width: '20%' }}></Column>
+                <Column field="status" header="Status" sortable style={{ width: '25%' }}></Column>
+                <Column field="created_at" header="Order Placed" sortable style={{ width: '25%' }}></Column>
             </DataTable>
         </div>
     );

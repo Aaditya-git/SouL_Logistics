@@ -3,6 +3,7 @@ from app.config import get_database
 from dotenv import load_dotenv
 import os
 from bson import ObjectId
+import time
 
 load_dotenv()
 db = get_database()
@@ -209,10 +210,18 @@ async def insert_order(order_data):
 async def query_order(order_id):
     if db is None:
         raise ValueError("Database connection is not available.")
-    result = await asyncio.to_thread(orders_collection.find_one, {'order_id': order_id})
+    try:
+        object_id = ObjectId(order_id)
+    except:
+        raise ValueError("Invalid ObjectId format")
+    
+    result = await asyncio.to_thread(orders_collection.find_one, {'_id': object_id})
+    
     if result:
         result["_id"] = str(result["_id"])
-    return result
+        return result
+    else:
+        return None
 
 
 async def query_all_orders(user_id):
@@ -269,3 +278,35 @@ async def delete_shipment(shipment_id):
         raise ValueError('Database connection is not available.')
     result = await asyncio.to_thread(shipments_collection.delete_one, {'shipment_id': shipment_id})
     return result
+
+
+async def update_shipment_status(order_id: str, initial_status: str):
+    print(f"Initial status: {initial_status}")
+    if initial_status.upper() == "PROCESSING":
+        object_id = ObjectId(order_id)
+        print(f"Object ID: {object_id}")
+        
+        await asyncio.sleep(15)
+
+        await asyncio.to_thread(
+            orders_collection.update_one,
+            {"_id": object_id},
+            {"$set": {"status": "Shipped"}}
+        )
+        await asyncio.sleep(15)
+
+        await asyncio.to_thread(
+            orders_collection.update_one,
+            {"_id": object_id},
+            {"$set": {"status": "In Transit"}}
+        )
+        await asyncio.sleep(15)
+        
+        
+        await asyncio.to_thread(
+            orders_collection.update_one,
+            {"_id": object_id},
+            {"$set": {"status": "Delivered"}}
+        )
+    else:
+        print(f"Order {order_id} status '{initial_status}' is not valid for processing.")

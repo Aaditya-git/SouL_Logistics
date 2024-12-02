@@ -14,7 +14,6 @@ function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const navigate = useNavigate();
-    sessionStorage.removeItem('user_data');
 
     const handleLogin = async () => {
         const credentials = { email, password };
@@ -32,7 +31,6 @@ function Login() {
                 const data = await response.json();
                 
                 if (data && data.id) {
-                    sessionStorage.setItem('user_data', JSON.stringify({id: data.id}));
                     navigate('/dashboard');
                 } else {
                     alert('Login successful, but user ID is missing.');

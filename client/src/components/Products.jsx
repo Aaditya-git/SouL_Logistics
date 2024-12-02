@@ -20,8 +20,24 @@ export default function Products() {
         const fetchProducts = async () => {
             try {
                 const response = await axios.get('http://localhost:8000/products');
-                setProducts(response.data);
-                console.log(response)
+                const transformedProducts = response.data.map((product) => ({
+                    id: product._id,
+                    name: product.name,
+                    description: product.description,
+                    price: product.price,
+                    category: product.category,
+                    inventoryStatus:
+                        product.available_stock > 100
+                            ? 'INSTOCK'
+                            : product.available_stock > 0
+                            ? 'LOWSTOCK'
+                            : 'OUTOFSTOCK',
+                    tags: product.tags.join(', '),
+                    dimensions: `${product.dimensions.length}x${product.dimensions.width}x${product.dimensions.height}`,
+                    availableStock: product.available_stock,
+                    manufacturer: product.manufacturer,
+                }));
+                setProducts(transformedProducts);
             } catch (error) {
                 console.error('Error fetching products:', error);
             }
@@ -30,17 +46,14 @@ export default function Products() {
         fetchProducts();
     }, []);
 
-    const getSeverity = (product) => {
-        switch (product.inventoryStatus) {
+    const getSeverity = (inventoryStatus) => {
+        switch (inventoryStatus) {
             case 'INSTOCK':
                 return 'success';
-
             case 'LOWSTOCK':
                 return 'warning';
-
             case 'OUTOFSTOCK':
                 return 'danger';
-
             default:
                 return null;
         }
@@ -51,12 +64,20 @@ export default function Products() {
 
         if (value.indexOf('!') === 0) {
             setSortOrder(-1);
-            setSortField(value.substring(1, value.length));
+            setSortField(value.substring(1));
             setSortKey(value);
         } else {
             setSortOrder(1);
             setSortField(value);
             setSortKey(value);
+        }
+    };
+
+    const handleAddToCart = async (productId) => {
+        try {
+            await axios.post('http://localhost:8000/placeOrder', { id: productId });
+        } catch (error) {
+            console.error('Error adding to cart:', error);
         }
     };
 
@@ -68,21 +89,27 @@ export default function Products() {
         return (
             <div className="col-12" key={product.id}>
                 <div className={classNames('flex flex-column xl:flex-row xl:align-items-start p-4 gap-4', { 'border-top-1 surface-border': index !== 0 })}>
-                    <img className="w-9 sm:w-16rem xl:w-10rem shadow-2 block xl:block mx-auto border-round" src={`https://picsum.photos/150/150`} alt={product.name} />
                     <div className="flex flex-column sm:flex-row justify-content-between align-items-center xl:align-items-start flex-1 gap-4">
                         <div className="flex flex-column align-items-center sm:align-items-start gap-3">
                             <div className="text-2xl font-bold text-900">{product.name}</div>
+                            <div className="text-700">{product.description}</div>
                             <div className="flex align-items-center gap-3">
                                 <span className="flex align-items-center gap-2">
                                     <i className="pi pi-tag"></i>
                                     <span className="font-semibold">{product.category} | {product.tags}</span>
                                 </span>
-                                <Tag value={product.inventoryStatus} severity={getSeverity(product)}></Tag>
+                                <Tag value={product.inventoryStatus} severity={getSeverity(product.inventoryStatus)}></Tag>
                             </div>
+                            <div className="text-600 text-sm">Manufacturer: {product.manufacturer}</div>
                         </div>
                         <div className="flex sm:flex-column align-items-center sm:align-items-end gap-3 sm:gap-2">
                             <span className="text-2xl font-semibold">${product.price}</span>
-                            <Button icon="pi pi-shopping-cart" className="p-button-rounded" disabled={product.inventoryStatus === 'OUTOFSTOCK'}></Button>
+                            <Button 
+                                icon="pi pi-shopping-cart" 
+                                className="p-button-rounded" 
+                                disabled={product.inventoryStatus === 'OUTOFSTOCK'}
+                                onClick={() => handleAddToCart(product.id)}
+                            ></Button>
                         </div>
                     </div>
                 </div>
@@ -90,19 +117,15 @@ export default function Products() {
         );
     };
 
-    const listTemplate = (items) => {
-        if (!items || items.length === 0) return null;
-
-        let list = items.map((product, index) => {
-            return itemTemplate(product, index);
-        });
-
-        return <div className="grid grid-nogutter">{list}</div>;
-    };
-
     return (
         <div className="card">
-            <DataView value={products} listTemplate={listTemplate} header={header()} sortField={sortField} sortOrder={sortOrder} />
+            <DataView
+                value={products}
+                itemTemplate={itemTemplate}
+                header={header()}
+                sortField={sortField}
+                sortOrder={sortOrder}
+            />
         </div>
-    )
+    );
 }

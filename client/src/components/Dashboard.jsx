@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TabMenu } from 'primereact/tabmenu';
 import Orders from './Orders';
 import Products from './Products';
+import Tracking from './Tracking';
 import Container from 'react-bootstrap/Container';
 import 'primereact/resources/themes/md-light-deeppurple/theme.css';
 import 'primereact/resources/primereact.min.css';
@@ -21,7 +22,7 @@ function Dashboard() {
             case 0:
                 return <Orders />;
             case 1:
-                return <>Tracking</>;
+                return <Tracking />;
             case 2:
                 return <Products />;
             default:

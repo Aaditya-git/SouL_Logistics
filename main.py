@@ -6,7 +6,7 @@ from app.db.database import *
 from pydantic import BaseModel
 from datetime import datetime
 import logging
-from bson import ObjectId
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -31,6 +31,12 @@ app.add_middleware(
 class LoginRequest(BaseModel):
     email: str
     password: str
+
+class AddToCartRequest(BaseModel):
+    id: str
+    
+class OrderStatus(BaseModel):
+    order_id: str
 
 SHARED_DATA = {
     'id': '',
@@ -70,51 +76,44 @@ async def get_orders():
 async def get_products():
     global SHARED_DATA
     products = await query_all_products()
-    warehouses = await query_warehouse_by_region(SHARED_DATA['region'])
-    for warehouse in warehouses:
-        for product in products:
-            inventory = await query_inventory_by_warehouse_id(warehouse["_id"], product["_id"])
     return products
 
-@app.post('/order', status_code=status.HTTP_201_CREATED)
-async def place_order(order: Order):
+
+@app.post('/placeOrder', status_code=status.HTTP_201_CREATED)
+async def place_order(id: AddToCartRequest):
     try:
-        state_region_mappings = {
-            'AL': 'us-east-1', 'AK': 'us-east-2', 'AZ': 'us-west-1', 'AR': 'us-west-2', 'CA': 'us-central',
-            'CO': 'us-east-1', 'CT': 'us-east-2', 'DE': 'us-west-1', 'FL': 'us-west-2', 'GA': 'us-central',
-            'HI': 'us-east-1', 'ID': 'us-east-2', 'IL': 'us-west-1', 'IN': 'us-west-2', 'IA': 'us-central',
-            'KS': 'us-east-1', 'KY': 'us-east-2', 'LA': 'us-west-1', 'ME': 'us-west-2', 'MD': 'us-central',
-            'MA': 'us-east-1', 'MI': 'us-east-2', 'MN': 'us-west-1', 'MS': 'us-west-2', 'MO': 'us-central',
-            'MT': 'us-east-1', 'NE': 'us-east-2', 'NV': 'us-west-1', 'NH': 'us-west-2', 'NJ': 'us-central',
-            'NM': 'us-east-1', 'NY': 'us-east-2', 'NC': 'us-west-1', 'ND': 'us-west-2', 'OH': 'us-central',
-            'OK': 'us-east-1', 'OR': 'us-east-2', 'PA': 'us-west-1', 'RI': 'us-west-2', 'SC': 'us-central',
-            'SD': 'us-east-1', 'TN': 'us-east-2', 'TX': 'us-west-1', 'UT': 'us-west-2', 'VT': 'us-central',
-            'VA': 'us-east-1', 'WA': 'us-east-2', 'WV': 'us-west-1', 'WI': 'us-west-2', 'WY': 'us-central'
+        user_data = await query_user(SHARED_DATA['id'])
+
+        payload = {
+            'user_id': SHARED_DATA['id'],
+            'product_id': id.id,
+            'status': 'Processing',
+            'address': user_data['address'],
+            'city': user_data['city'],
+            'state': user_data['state'],
+            'zip_code': user_data['zip_code'],
+            'region': SHARED_DATA['region'],
+            'created_at': datetime.now().isoformat()
         }
-        order_data = order.model_dump()
-        order_data["status"] = "Pending"
-        order_data["region"] = state_region_mappings.get(order_data["state"], 'Unknown Region')
-        warehouses = await query_warehouse_by_region(order_data["region"])
-        for warehouse in warehouses:
-            inventory = await query_inventory_by_warehouse_id(warehouse["warehouse_id"], order_data["product_id"])
-            for inv in inventory:
-                if inv["quantity"] - order_data["quantity"] > inv["minimum_stock_level"]:
-                    res = await update_inventory(inv["inventory_id"], {"quantity": inv["quantity"] - order_data["quantity"]})
-                    if res:
-                        order_data["status"] = "Processing"
-                        response = await insert_order(order_data)
-                        if not response:
-                            raise HTTPException(
-                                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                                detail="Failed to create order."
-                            )
-                        return {"message": "Order created successfully", "order": response}
-        if order["status"] == "Pending":
-            return {"message": "Order cannot be fulfilled", "order": order_data}
-        return {"message": "Order Created Successfully", "order": response}
+
+        try:
+            order_data = Order(**payload)
+        except ValueError as e:
+            raise HTTPException(status_code=422, detail=f"Validation error: {e}")
+
+        order_dict = order_data.model_dump(by_alias=True)
+        response = await insert_order(order_dict)
+        if response:
+            await update_shipment_status(response, order_dict['status'])
+            return {"message": "Order placed successfully", "data": response}
+
     except Exception as e:
-        logger.error(f"Error creating order: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred."
-        )
+        print("Error:", str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+
+@app.post("/orderStatus")
+async def get_order_status(order_id: OrderStatus):
+    order = await query_order(order_id.order_id)
+    status_mappings = {'Placed': 0, 'Processing': 1, 'Shipped': 2, 'In Transit': 3, 'Delivered': 4}
+    return {'index': status_mappings.get(order['status'])}
