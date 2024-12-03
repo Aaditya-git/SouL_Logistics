@@ -1,4 +1,4 @@
-# **Distributed Logistics Management System**
+# **Soul Logistics**
 
 This application is designed to manage logistics efficiently using a distributed database system. It features a **React-based front end** and a **FastAPI-based backend**, with MongoDB as the database. Sensitive configurations, like MongoDB URIs, are securely managed using environment variables.
 
@@ -60,26 +60,4 @@ Ensure you have the following installed:
 1. API Base URL: The backend runs on `http://localhost:8000` by default
 2. Frontend URL: Access the application at `http://localhost:3000` in your browser
 3. Environment Variable Handling: Make sure the `.env` file contains valid MongoDB connection strings
-
----
-
-### **4. File Structure**
-├── app/
-│   ├── main.py
-│   ├── db/
-│   ├── routers/
-│   ├── services/
-│   ├── config.py
-├── client/
-│   ├── src/
-│   │   ├── components/
-│   │   └── App.js
-│   ├── package.json
-├── venv/
-├── .env
-├── .env.example
-├── .gitignore
-├── main.py
-├── README.md
-├── requirement.txt
 
